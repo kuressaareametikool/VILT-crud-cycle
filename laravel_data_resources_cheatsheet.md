@@ -31,11 +31,11 @@ In this cheatsheet, we use **Post** as the example, but this pattern works for A
 
 **Examples:**
 
-| Command | Creates | Model | Table | Factory | Seeder |
+| Command | Creates | Model | Migration | Factory | Seeder |
 |---------|---------|-------|-------|---------|--------|
-| `make:model Post -mfs` | All 4 files | `Post.php` | `posts` | `PostFactory.php` | `PostSeeder.php` |
-| `make:model UserProfile -mfs` | All 4 files | `UserProfile.php` | `user_profiles` | `UserProfileFactory.php` | `UserProfileSeeder.php` |
-| `make:model Product -mfs` | All 4 files | `Product.php` | `products` | `ProductFactory.php` | `ProductSeeder.php` |
+| `make:model Post -mfs` | All 4 files | `Post.php` | `YYYY_MM_DD_HHMMSS_create_posts_table.php` | `PostFactory.php` | `PostSeeder.php` |
+| `make:model UserProfile -mfs` | All 4 files | `UserProfile.php` | `YYYY_MM_DD_HHMMSS_create_user_profiles_table.php` | `UserProfileFactory.php` | `UserProfileSeeder.php` |
+| `make:model Product -mfs` | All 4 files | `Product.php` | `YYYY_MM_DD_HHMMSS_products_table.php` | `ProductFactory.php` | `ProductSeeder.php` |
 
 **Laravel is smart:** It automatically handles the naming. You only write the model name in PascalCase (like `UserProfile`), and Laravel figures out the rest!
 
