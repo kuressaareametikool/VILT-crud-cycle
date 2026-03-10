@@ -1,4 +1,4 @@
-# Laravel Deployment to zone.ee using Deployer.org - Complete Checklist
+# Laravel Deployment to zone.ee using Deployer.org
 
 ## Pre-Deployment Setup
 
@@ -26,24 +26,19 @@
 
 ### 2. Firewall & Access Configuration
 - [ ] Log into zone.ee control panel
-- [ ] Navigate to Security/Firewall settings
+- [ ] Navigate to SSH/IP whitelisting
 - [ ] **Option A: Add Current IP**
   - [ ] Find your public IP: https://whatismyipaddress.com
   - [ ] Add your IP to whitelist
   - [ ] Verify SSH access from your IP works
 - [ ] **Option B: Allow Access Anywhere**
-  - [ ] If in corporate environment, consider security implications
   - [ ] Configure firewall rules to allow SSH from any IP
-  - [ ] Document decision in team documentation
-- [ ] Test connection multiple times before proceeding
 
 ### 2.5 Domain/Subdomain Linking (CRITICAL - Must Be Done First)
 - [ ] Log into zone.ee control panel
 - [ ] Navigate to **Domains** or **Domain Management** section
 - [ ] **Option A: Using Existing Domain**
   - [ ] Select your domain from the list
-  - [ ] Go to **Subdomains** or **DNS Settings**
-  - [ ] Ensure domain/subdomain is linked to the virtual user (`virt_xxxx`)
   - [ ] Verify the directory path points to `~/domeenid/{{www_domain.ee}}/{{root_folder}}`
   - [ ] **Common path for zone.ee:**
     - [ ] `~/domeenid/example.ee/folder` (for domain root)
@@ -52,9 +47,6 @@
   - [ ] Enter subdomain name (e.g., "app" for app.example.ee)
   - [ ] Set directory to `~/domeenid/{{www_domain.ee}}/{{root_folder}}`
   - [ ] Apply/Save configuration
-- [ ] **Option C: Adding New Domain**
-  - [ ] Create a new subdomain via zone dashboard
-  - [ ] Configure directory path
 - [ ] **CRITICAL: Path Configuration for Initial Deployment**
   - [ ] **FOR INITIAL DEPLOYMENT ONLY:** Point domain to deployment root directory
     - [ ] Set path to: `~/domeenid/{{www_domain.ee}}/{{root_folder}}`
@@ -116,10 +108,10 @@
 
 ---
 
-## deploy.php Configuration
+## deploy.yaml Configuration
 
 ### 5. Update Deployer Configuration File
-- [ ] Create/locate `deploy.php` in project root
+- [ ] Create/locate `deploy.yaml` in project root
 - [ ] Replace placeholder variables:
   - [ ] `{{project_name}}` → your actual project name (e.g., "myapp")
   - [ ] `{{github_user}}` → your GitHub username
@@ -172,34 +164,18 @@
     Database Name: ___________________
     Database User: ___________________
     Database Password: ___________________
-    Database Host: localhost (typically)
+    Database Host: zone specific host
     ```
 - [ ] **Option B: Use Existing Database**
   - [ ] Select existing database from list
   - [ ] Verify existing user credentials
   - [ ] Add new user if needed for this project
-- [ ] **Verify Database Connection**
-  - [ ] Go to **phpMyAdmin** (if available in zone.ee)
-  - [ ] Log in with database credentials:
-    ```
-    Server: localhost
-    Username: [your db user]
-    Password: [your db password]
-    ```
-  - [ ] Confirm you can see your database
-  - [ ] Verify table can be created (test if needed)
-- [ ] **Document zone.ee Database Details**
-  - [ ] Database host: `localhost` (zone.ee uses local database)
-  - [ ] Database port: `3306` (standard MySQL port)
-  - [ ] Keep these credentials secure for .env configuration
 - [ ] **If Having Connection Issues:**
   - [ ] Check that user has proper permissions
   - [ ] Verify database exists in control panel
-  - [ ] Contact zone.ee support if credentials don't work
-  - [ ] Some zone.ee accounts may need specific host configuration
 
 ### 7.5 Initial Deployment Configuration (CRITICAL)
-- [ ] Review `deploy:` task in `deploy.php`
+- [ ] Review `deploy:` task in `deploy.yaml/php`
 - [ ] **FOR INITIAL DEPLOYMENT ONLY** - Comment out database-dependent tasks:
   ```php
   tasks:
@@ -214,7 +190,7 @@
       - 'deploy:publish'
   ```
 - [ ] **Reason:** Laravel cannot run artisan commands without `.env` file
-- [ ] Save the modified `deploy.php`
+- [ ] Save the modified `deploy.yaml`
 
 ### 8. Create .env File on Server
 - [ ] SSH into zone.ee server
@@ -243,7 +219,7 @@
 
 - [ ] **ZONE.EE DATABASE CONFIGURATION (from step 7):**
   - [ ] `DB_CONNECTION` → `mysql`
-  - [ ] `DB_HOST` → `localhost` (zone.ee uses local database)
+  - [ ] `DB_HOST` → `zone db host`
   - [ ] `DB_PORT` → `3306` (standard MySQL port)
   - [ ] `DB_DATABASE` → [Database name from zone.ee setup]
   - [ ] `DB_USERNAME` → [Database user from zone.ee setup]
@@ -281,20 +257,10 @@
   - [ ] If successful, you'll see connection info
   - [ ] If error, verify `.env` database credentials match zone.ee setup
 
-### 9. Alternative: Use Deployer .env Automation (Optional)
-- [ ] If preferred, configure `.env` handling in `deploy.php`:
-  ```php
-  set('shared_files', ['.env']);
-  set('shared_dirs', ['storage']);
-  ```
-- [ ] Create shared `.env` file on server before deployment
-- [ ] This ensures `.env` persists across deployments
-
 ---
 
-## Database Configuration
 
-### 10. Run Database Migrations
+### 9. Run Database Migrations
 - [ ] After initial deployment and `.env` configuration:
   - [ ] SSH into server
   - [ ] Navigate to current symlink
@@ -306,20 +272,13 @@
     php artisan migrate
     ```
   - [ ] Verify no migration errors
-- [ ] Or uncomment `artisan:migrate` in `deploy.php` for future deployments
+- [ ] Or uncomment `artisan:migrate` in `deploy.yaml` for future deployments
 
 ---
 
 ## Application Configuration
 
-### 11. Node.js / npm Configuration
-- [ ] Verify Node.js is installed on zone.ee
-  ```bash
-  ssh virt_xxxx@www.domain.ee
-  node --version
-  npm --version
-  ```
-- [ ] If not installed, contact zone.ee support or use nvm
+### 10. Node.js / npm Configuration
 - [ ] Verify `package.json` exists in project root
 - [ ] Verify `package-lock.json` is committed to Git
 - [ ] Confirm Vite is configured correctly
@@ -331,7 +290,7 @@
   npm run build
   ```
 
-### 12. Laravel/Inertia/Vue Configuration
+### 11. Laravel/Inertia/Vue Configuration
 - [ ] Verify Inertia.js is installed
   ```bash
   composer show | grep inertia
@@ -345,13 +304,13 @@
   npm run dev
   ```
 
-### 13. PHP Configuration on zone.ee
+### 12. PHP Configuration on zone.ee
 - [ ] Verify PHP 8.4 is available (as noted in `opcache:clear` task)
   ```bash
   ssh virt_xxxx@www.domain.ee
   php84 --version
   ```
-- [ ] If using different PHP version, update `deploy.php`:
+- [ ] If using different PHP version, update `deploy.yaml`:
   ```php
   opcache:clear:
     - run: killall php82-cgi || true  // Change to correct version
@@ -384,7 +343,7 @@
 
 ## Pre-Deployment Testing
 
-### 15. Local Testing
+### 13. Local Testing
 - [ ] Run all tests locally
   ```bash
   php artisan test
@@ -407,7 +366,7 @@
   git push origin main
   ```
 
-### 16. Verify Git Repository
+### 14. Verify Git Repository
 - [ ] Ensure code is pushed to GitHub
   ```bash
   git push origin main
@@ -416,10 +375,10 @@
 - [ ] Test clone on different machine (if possible)
 - [ ] Verify all files are tracked (no missing files)
 
-### 17. Deployer Configuration Validation
-- [ ] Validate `deploy.php` syntax
+### 15. Deployer Configuration Validation
+- [ ] Validate `deploy.yaml` syntax
   ```bash
-  php -l deploy.php
+  php -l deploy.yaml
   ```
 - [ ] Run deployer in dry-run mode (if available)
   ```bash
@@ -432,7 +391,7 @@
 
 ## Initial Deployment Execution
 
-### 18. First Deployment
+### 16. First Deployment
 - [ ] Execute initial deployment (with database tasks commented out)
   ```bash
   dep deploy stage
@@ -445,7 +404,7 @@
   - [ ] Storage link is created
   - [ ] Deploy succeeds without database connection errors
 
-### 19. Verify Initial Deployment
+### 17. Verify Initial Deployment
 - [ ] SSH into zone.ee
   ```bash
   ssh virt_xxxx@www.domain.ee
@@ -470,7 +429,7 @@
   ls -la ~/domeenid/{{www_domain.ee}}/{{root_folder}}/
   ```
 
-### 19.5 UPDATE DOMAIN PATH IN ZONE.EE (CRITICAL AFTER FIRST DEPLOYMENT)
+### 17.5 UPDATE DOMAIN PATH IN ZONE.EE (CRITICAL AFTER FIRST DEPLOYMENT)
 - [ ] **This step must be done after first successful deployment**
 - [ ] Log into zone.ee control panel
 - [ ] Navigate to **Domains** → Your domain
@@ -491,7 +450,7 @@
 - [ ] Check that assets load properly
 - [ ] If blank page or 500 error, verify path is correct
 
-### 20. Database Setup Post-Deployment
+### 18. Database Setup Post-Deployment
 - [ ] SSH into server
   ```bash
   ssh virt_xxxx@www.domain.ee
@@ -510,7 +469,7 @@
   php artisan key:generate
   ```
 
-### 21. Test Web Application
+### 19. Test Web Application
 - [ ] Open application in browser
   ```
   https://www.domain.ee
@@ -530,7 +489,7 @@
 
 ## Post-Deployment Configuration
 
-### 22. Update deploy.php for Future Deployments
+### 20. Update deploy.yaml for Future Deployments
 - [ ] Uncomment database-dependent tasks
   ```php
   tasks:
@@ -540,8 +499,8 @@
       - 'npm:production'
       - 'artisan:storage:link'
       - 'artisan:optimize:clear'
-      - 'artisan:migrate'              // NOW UNCOMMENTED
-      - 'artisan:optimize'             // NOW UNCOMMENTED
+      - 'artisan:migrate'              
+      - 'artisan:optimize'           
       - 'deploy:publish'
   ```
 - [ ] If using PM2 for queue workers, uncomment:
@@ -549,14 +508,14 @@
   after:
     deploy:success: [opcache:clear, pm2:restart]
   ```
-- [ ] Commit updated `deploy.php`
+- [ ] Commit updated `deploy.yaml`
   ```bash
-  git add deploy.php
+  git add deploy.yaml
   git commit -m "Enable database tasks for production"
   git push origin main
   ```
 
-### 23. Configure Queue Workers (if needed)
+### 21. Configure Queue Workers (if needed)
 - [ ] If using queue jobs, set up PM2
   ```bash
   ssh virt_xxxx@www.domain.ee
@@ -592,7 +551,7 @@
   pm2 list
   ```
 
-### 24. SSL/HTTPS Configuration
+### 22. SSL/HTTPS Configuration
 - [ ] Verify SSL certificate is installed (zone.ee should provide)
 - [ ] Test HTTPS access
   ```
@@ -609,7 +568,7 @@
   php artisan config:clear
   ```
 
-### 25. Configure Email (if needed)
+### 23. Configure Email (if needed)
 - [ ] Check zone.ee for mail server details
 - [ ] Update `.env` mail configuration
   ```
@@ -631,7 +590,7 @@
 
 ## Performance & Optimization
 
-### 26. Caching and Optimization
+### 24. Caching and Optimization
 - [ ] Clear all caches on server
   ```bash
   ssh virt_xxxx@www.domain.ee
@@ -642,7 +601,7 @@
   php artisan view:cache
   ```
 - [ ] Verify OPcache is being cleared on deployment
-  - [ ] Check `before: deploy:success: opcache:clear` in `deploy.php`
+  - [ ] Check `before: deploy:success: opcache:clear` in `deploy.yaml`
   - [ ] Monitor that `killall php84-cgi` executes successfully
 - [ ] Test application responsiveness
 - [ ] Monitor logs for errors
@@ -650,7 +609,7 @@
   tail -f storage/logs/laravel.log
   ```
 
-### 27. Logging and Monitoring
+### 25. Logging and Monitoring
 - [ ] Verify logs are being written
   ```bash
   ls -la storage/logs/
@@ -672,7 +631,7 @@
 
 ## Subsequent Deployments
 
-### 28. Deployment Workflow for Updates
+### 26. Deployment Workflow for Updates
 - [ ] Make changes locally
   ```bash
   git add .
@@ -688,35 +647,18 @@
 - [ ] Verify application loads and works
 - [ ] Check logs for any warnings
 
-### 29. Rollback Procedures
+### 27. Rollback Procedures
 - [ ] If deployment fails, Deployer keeps releases
   ```bash
   dep rollback stage
   ```
-- [ ] Verify `keep_releases: 1` in `deploy.php` (adjust as needed)
+- [ ] Verify `keep_releases: 1` in `deploy.yaml` (adjust as needed)
 - [ ] Test rollback procedure before first deployment
   ```bash
   dep deploy stage
   dep rollback stage
   ```
 - [ ] Verify previous version is restored
-
-### 30. Maintenance and Updates
-- [ ] Regularly update Composer dependencies
-  ```bash
-  composer update
-  ```
-- [ ] Regularly update npm dependencies
-  ```bash
-  npm update
-  ```
-- [ ] Monitor security advisories
-  ```bash
-  composer audit
-  npm audit
-  ```
-- [ ] Schedule monthly dependency updates
-- [ ] Run tests after updates before deploying
 
 ---
 
@@ -878,7 +820,7 @@
 
 #### Deployment Freezes or Hangs
 - [ ] Check server resources (disk space, RAM)
-- [ ] Review any long-running tasks in deploy.php
+- [ ] Review any long-running tasks in deploy.yaml
 - [ ] Verify network connectivity
 - [ ] Check zone.ee server status
 - [ ] Try canceling with Ctrl+C and retrying
@@ -887,7 +829,7 @@
 
 ## Security Checklist
 
-### 31. Security Configuration
+### Security Configuration
 - [ ] Verify `APP_DEBUG=false` in production `.env`
 - [ ] Use strong, random `APP_KEY`
 - [ ] Enable HTTPS/SSL (check zone.ee configuration)
@@ -902,15 +844,6 @@
   composer update --security-only
   npm audit fix
   ```
-
-### 32. Backup Configuration
-- [ ] Ensure zone.ee has automatic backups enabled
-- [ ] Document backup retention policy
-- [ ] Test database restore procedures
-- [ ] Schedule regular manual backups if needed
-- [ ] Document backup locations and access procedures
-
----
 
 ## Final Verification Checklist
 
@@ -978,26 +911,3 @@ vendor/bin/dep releases stage
 ```
 
 ---
-
-## Documentation & Communication
-
-### 34. Team Documentation
-- [ ] Create deployment runbook for team
-- [ ] Document zone.ee account credentials in secure location
-- [ ] Document deployment process in team wiki
-- [ ] Create troubleshooting guide
-- [ ] Share SSH key setup instructions with team
-- [ ] Document rollback procedures
-
-### 35. Post-Deployment Communication
-- [ ] Notify team of successful deployment
-- [ ] Share deployment notes (changes deployed, issues fixed)
-- [ ] Request QA verification if applicable
-- [ ] Monitor application for issues in first 24 hours
-- [ ] Gather feedback on deployment process
-
----
-
-**Last Updated:** 2024
-**Maintained By:** Your Team
-**Next Review Date:** [Set quarterly review date]
