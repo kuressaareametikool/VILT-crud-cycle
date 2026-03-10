@@ -1,0 +1,45 @@
+import:
+  - recipe/laravel.php
+
+config:
+  application: "{{project_name}}"
+  repository: 'git@github.com:{{github_user}}/{{project_name}}.git'
+  keep_releases: 1
+
+hosts:
+  stage:
+    hostname: '{{www_domain.ee}}'
+    http_user: '{{virt_xxxx}}'
+    remote_user: '{{virt_xxxx}}'
+    deploy_path: '~/domeenid/{{www_domain.ee}}/{{root_folder}}'
+
+tasks:
+  npm:production:
+    - run: 'cd {{release_path}} && npm ci'
+    - run: 'cd {{release_path}} && npx vite build'
+    - run: 'cd {{release_path}} && rm -rf node_modules'
+
+# Ensure that correct php version is selected
+  opcache:clear:
+    - run: killall php84-cgi || true
+
+# If use pm2 to run laravel queue worker, uncomment the following lines to restart it after deployment
+  #  pm2:restart:
+  #    - run: pm2 restart laravel-queue-worker
+
+  deploy:
+    - 'deploy:prepare'
+    - 'deploy:vendors'
+    - 'npm:production'
+    - 'artisan:storage:link'
+    - 'artisan:optimize:clear'
+    - 'artisan:migrate'
+    - 'artisan:optimize'
+    - 'deploy:publish'
+
+after:
+  deploy:failed: deploy:unlock
+#  opcache:clear: pm2:restart
+
+before:
+  deploy:success: opcache:clear
